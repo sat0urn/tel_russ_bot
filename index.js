@@ -5,7 +5,7 @@ const {UserModel, FilmModel} = require('./models')
 const {Sequelize} = require("sequelize");
 
 const token = '6085121684:AAGxx3urYuZf70S5NSqpSYSJmhIGRkTNmKo'
-const logoUrl = './images/metro-do-porto.webp'
+const logoUrl = 'https://raw.githubusercontent.com/sat0urn/tel_russ_bot/master/images/logo.webp'
 
 const bot = new TelegramApi(token, {polling: true})
 
@@ -209,7 +209,7 @@ const start = async () => {
 
             return bot.sendMessage(chatId, 'Я вас не понимаю извините...' )
         } catch (e) {
-
+            console.log(e)
             return bot.sendMessage(chatId, 'Произошла ошибка в функции \'start\'! Приношу извинения...')
 
         }
