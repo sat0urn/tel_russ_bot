@@ -99,17 +99,19 @@ const filmsArrayAppend = async (chatId, id) => {
         const singleFilm = await FilmModel.findOne({where: {id: id}})
         const bookmarks = user.bookmarks;
 
-        bookmarks.sort()
-        filmsIds.sort()
+        if (bookmarks !== null) {
+            bookmarks.sort()
+            filmsIds.sort()
 
-        filmsIds.map(r => {
-            bookmarks.map(b => {
-                if (b === r) {
-                    const index = filmsIds.indexOf(b);
-                    filmsIds.splice(index, 1)
-                }
+            filmsIds.map(r => {
+                bookmarks.map(b => {
+                    if (b === r) {
+                        const index = filmsIds.indexOf(b);
+                        filmsIds.splice(index, 1)
+                    }
+                })
             })
-        })
+        }
 
         if (filmsIds.includes(id)) {
             await UserModel.update({
@@ -123,6 +125,7 @@ const filmsArrayAppend = async (chatId, id) => {
             await bot.sendMessage(chatId, `'${singleFilm.title}' уже у вас в закладках, проверьте здесь /bookmark!`)
         }
     } catch (e) {
+        console.log(e)
         return bot.sendMessage(chatId, 'Произошла ошибка в функции добавление идентификатора в базу! Приношу извинения...')
     }
 }
