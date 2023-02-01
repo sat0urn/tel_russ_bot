@@ -2,12 +2,12 @@ const {Sequelize} = require('sequelize')
 require('dotenv').config()
 
 module.exports = new Sequelize(
-    'tel_russ_bot',
-    'postgres',
-    'root',
+    process.env.LOCAL_DATABASE_NAME,
+    process.env.LOCAL_USERNAME_DB,
+    process.env.LOCAL_PASSWORD_DB,
     {
-        host: '35.234.169.19',
-        port: '5432',
+        host: process.env.LOCAL_HOST_DB,
+        port: process.env.LOCAL_PORT_DB,
         dialect: 'postgres'
     }
 )
