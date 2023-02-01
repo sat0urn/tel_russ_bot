@@ -6,6 +6,7 @@ const {Sequelize} = require("sequelize");
 require('dotenv').config()
 
 const token = process.env.TOKEN;
+
 const logoUrl = 'https://raw.githubusercontent.com/sat0urn/tel_russ_bot/master/images/logo.webp'
 
 const bot = new TelegramApi(token, {polling: true})
@@ -13,6 +14,7 @@ const bot = new TelegramApi(token, {polling: true})
 const films = {}
 let filmsIds = []
 let gate = false;
+let buttonPressed = false;
 
 const filmChoiceOptions = {reply_markup: JSON.stringify({inline_keyboard: []})}
 
@@ -36,13 +38,17 @@ const filmsOutput = async (chatId, text) => {
         const inlineMarkupObjects = [[]]
         let counter = 0;
         let check = false;
+        buttonPressed = false;
 
         data.map(d => filmsIds.push(d.id))
+
+        data.sort((a, b) => {return a.id - b.id})
 
         if (data.length !== 0) {
             await bot.sendMessage(chatId, 'Список фильмов по названию: ')
 
             for (let i = 0; i < data.length; i++) {
+                await bot.sendPhoto(chatId, `./images/${data[i].id}.webp`)
                 await bot.sendMessage(chatId,
                     `${data[i].id}. ${data[i].title}\n\n` +
                     `Описание: ${data[i].description}\n\n` +
@@ -79,17 +85,12 @@ const filmsOutput = async (chatId, text) => {
                 filmChoiceOptions.reply_markup = JSON.stringify({inline_keyboard: inlineMarkupObjects})
 
                 return bot.sendMessage(chatId, 'Какое кино вы хотите сохранить в закладках?', filmChoiceOptions)
-
             }
         } else {
-
             return bot.sendMessage(chatId, 'Извините, но экранизация данной книги у нас отсутствуют')
-
         }
     } catch (e) {
-
         return bot.sendMessage(chatId, 'Произошла ошибка в функции \'again\'! Приношу извинения...')
-
     }
 }
 
@@ -104,8 +105,8 @@ const filmsArrayAppend = async (chatId, id) => {
             bookmarks.sort()
             filmsIds.sort()
 
-            filmsIds.map(r => {
-                bookmarks.map(b => {
+            bookmarks.map(b => {
+                filmsIds.map(r => {
                     if (b === r) {
                         const index = filmsIds.indexOf(b);
                         filmsIds.splice(index, 1)
@@ -126,7 +127,6 @@ const filmsArrayAppend = async (chatId, id) => {
             await bot.sendMessage(chatId, `'${singleFilm.title}' уже у вас в закладках, проверьте здесь /bookmark!`)
         }
     } catch (e) {
-        console.log(e)
         return bot.sendMessage(chatId, 'Произошла ошибка в функции добавление идентификатора в базу! Приношу извинения...')
     }
 }
@@ -172,6 +172,7 @@ const start = async () => {
                 // ПОИСК
                 if (text === '/search') {
                     gate = true;
+                    buttonPressed = true;
                     return bot.sendMessage(chatId, 'Напишите название книги: ');
                 }
 
@@ -180,12 +181,15 @@ const start = async () => {
                     const user = await UserModel.findOne({chat_id: chatId});
                     const results = user.bookmarks;
 
+                    results.sort();
+
                     await bot.sendMessage(chatId, 'Ваши сохраенные фильмы:');
 
                     let singleFilm = {}
 
                     for (let i = 0; i < results.length; i++) {
                         singleFilm = await FilmModel.findOne({where: {id: results[i]}});
+                        await bot.sendPhoto(chatId, `./images/${results[i]}.webp`);
                         await bot.sendMessage(chatId,
                             `${singleFilm.id}. ${singleFilm.title}\n\n` +
                             `Описание: ${singleFilm.description}\n\n` +
@@ -209,11 +213,10 @@ const start = async () => {
             }
 
             // Доступ к ПОИСКу
-            if (gate) return filmsOutput(chatId, text)
+            if (gate && buttonPressed) return filmsOutput(chatId, text)
 
             return bot.sendMessage(chatId, 'Я вас не понимаю извините...' )
         } catch (e) {
-            console.log(e)
             return bot.sendMessage(chatId, 'Произошла ошибка в функции \'start\'! Приношу извинения...')
 
         }
@@ -229,8 +232,7 @@ const start = async () => {
             if (filmsIds != null && filmsIds.includes(parseInt(data))) {
                 await filmsArrayAppend(chatId, parseInt(data))
 
-                films[chatId] = {}
-                filmsIds = []
+                clearVariablesAndButtonPressed(chatId, false);
 
                 return bot.sendMessage(chatId, 'Хотите продолжить поиск?', startOption)
             }
@@ -239,8 +241,7 @@ const start = async () => {
             if (data === 'yes') {
                 await filmsArrayAppend(chatId, films[chatId][0].id)
 
-                films[chatId] = {}
-                filmsIds = []
+                clearVariablesAndButtonPressed(chatId, false);
 
                 return bot.sendMessage(chatId, 'Хотите продолжить поиск?', startOption)
             }
@@ -249,39 +250,41 @@ const start = async () => {
             if (data === 'no') {
                 await bot.sendMessage(chatId, `'${films[chatId][0].title}' НЕ добавлен, можете продолжить поиск`, startOption)
 
-                films[chatId] = {}
-                filmsIds = []
+                clearVariablesAndButtonPressed(chatId, false);
 
                 return;
             }
 
             // ЗАКЛАДКИ -> Поиск
             if (data === 'search') {
-                films[chatId] = {}
-                filmsIds = []
+                clearVariablesAndButtonPressed(chatId, true);
 
                 gate = true;
+
                 return bot.sendMessage(chatId, 'Напишите название книги: ')
             }
 
             // ЗАКЛАДКИ -> Отмена
             if (data === 'close') {
-                films[chatId] = {}
-                filmsIds = []
+                clearVariablesAndButtonPressed(chatId, false);
 
                 gate = false;
+
                 return bot.sendMessage(chatId, 'Спасибо что были здесь!')
             }
 
             // Доступ к продолжению ПОИСКа
-            if (gate) return filmsOutput(chatId, data)
-
+            if (gate && buttonPressed) return filmsOutput(chatId, data)
         } catch (e) {
-
             return bot.sendMessage(chatId, 'Произошла ошибка в слушателе событии кнопок! Приношу извинения...')
-
         }
     })
+}
+
+const clearVariablesAndButtonPressed = (chatId, bPressed) => {
+    films[chatId] = {}
+    filmsIds = []
+    buttonPressed = bPressed;
 }
 
 // НАЧАТЬ
