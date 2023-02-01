@@ -5,7 +5,7 @@ const {UserModel, FilmModel} = require('./models')
 const {Sequelize} = require("sequelize");
 require('dotenv').config()
 
-const token = process.env.TOKEN;
+const token = '6085121684:AAGxx3urYuZf70S5NSqpSYSJmhIGRkTNmKo';
 
 const logoUrl = 'https://raw.githubusercontent.com/sat0urn/tel_russ_bot/master/images/logo.webp'
 
