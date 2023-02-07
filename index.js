@@ -3,9 +3,8 @@ const sequelize = require('./db')
 const {choiceOption, startOption} = require('./options')
 const {UserModel, FilmModel} = require('./models')
 const {Sequelize} = require("sequelize");
-require('dotenv').config()
 
-const token = process.env.TOKEN;
+const token = '6085121684:AAGxx3urYuZf70S5NSqpSYSJmhIGRkTNmKo';
 
 const logoUrl = 'https://raw.githubusercontent.com/sat0urn/tel_russ_bot/master/images/logo.webp'
 
@@ -97,7 +96,7 @@ const filmsOutput = async (chatId, text) => {
 // ФУНКЦИЯ ДОБАВЛЕНИЯ ИДЕНТИФИКАТОРА КИНО В МАССИВ ЗАКЛАДОК
 const filmsArrayAppend = async (chatId, id) => {
     try {
-        const user = await UserModel.findOne({chat_id: chatId});
+        const user = await UserModel.findOne({where: {chat_id: `${chatId}`}});
         const singleFilm = await FilmModel.findOne({where: {id: id}})
         const bookmarks = user.bookmarks;
 
@@ -155,7 +154,9 @@ const start = async () => {
         const chatId = msg.chat.id;
 
         try {
-            const user = await UserModel.findOne({chat_id: chatId})
+            const user = await UserModel.findOne({where: {chat_id: `${chatId}`}})
+            console.log(chatId)
+            console.log(user)
 
             if (user != null) {
                 // НАЧАТЬ
@@ -178,7 +179,7 @@ const start = async () => {
 
                 // BOOKMARKS
                 if (text === '/bookmark') {
-                    const user = await UserModel.findOne({chat_id: chatId});
+                    const user = await UserModel.findOne({where: {chat_id: `${chatId}`}});
                     const results = user.bookmarks;
 
                     results.sort();
@@ -217,8 +218,8 @@ const start = async () => {
 
             return bot.sendMessage(chatId, 'Я вас не понимаю извините...' )
         } catch (e) {
+            console.log(e)
             return bot.sendMessage(chatId, 'Произошла ошибка в функции \'start\'! Приношу извинения...')
-
         }
     })
 
